@@ -16,6 +16,15 @@ ${nodeStruct().code}
     @builtin(num_workgroups) num_workgroups: vec3<u32>) {
         let id = global_invocation_index(workgroup_id, local_invocation_index, num_workgroups,
                                          1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
+
+        let gravity = vec2f(0, -.00001);
+        let restitution = .5;
+        nodes[id].velocity += gravity;
         nodes[id].position += nodes[id].velocity;
+
+        if(nodes[id].position.y < -1) {
+            nodes[id].position.y = -1;
+            nodes[id].velocity *= -1 * restitution;
+        }
     }
 `;

@@ -76,30 +76,31 @@ const main = async () => {
         ]
     };
 
+    const vels = [[0,0],[0,0]];//[[randClip()*.05, randClip()*.05], [randClip()*.05, randClip()*.05]];
     const nodes = nodeStruct().createFilledArray([
         {
             position: [0, .1],
-            velocity: [randClip()*.05, randClip()*.05]
+            velocity: vels[0]
         },
         {
             position: [.1, 0],
-            velocity: [randClip()*.05, randClip()*.05]
+            velocity: vels[0]
         },
         {
             position: [-.1, 0],
-            velocity: [randClip()*.05, randClip()*.05]
+            velocity: vels[0]
         },
         {
             position: [0, -.1],
-            velocity: [randClip()*.05, randClip()*.05]
+            velocity: vels[1]
         },
         {
             position: [.1, 0],
-            velocity: [randClip()*.05, randClip()*.05]
+            velocity: vels[1]
         },
         {
             position: [-.1, 0],
-            velocity: [randClip()*.05, randClip()*.05]
+            velocity: vels[1]
         },
     ]
     );
