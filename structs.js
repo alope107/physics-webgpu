@@ -120,3 +120,9 @@ export const edgeStruct = () => {
         createFilledArray
     };
 };
+
+export const uniformsStruct = /* wgsl */ `
+struct Uniforms {
+    gravity: vec2f //8 bytes
+} // total 8 bytes
+`;
