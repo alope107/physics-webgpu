@@ -1,6 +1,7 @@
 import { renderShaderCode } from "./render.js";
 import { startResizeObservation } from "./resize.js";
-import { triangleStruct } from "./structs.js";
+import { nodeStruct, triangleStruct } from "./structs.js";
+import { randClip } from "./random.js";
 
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
@@ -63,26 +64,58 @@ const main = async () => {
         ]
     };
 
+    const nodes = nodeStruct().createFilledArray([
+        {
+            position: [0, .1],
+            velocity: [randClip()*.05, randClip()*.05]
+        },
+        {
+            position: [.1, 0],
+            velocity: [randClip()*.05, randClip()*.05]
+        },
+        {
+            position: [-.1, 0],
+            velocity: [randClip()*.05, randClip()*.05]
+        },
+        {
+            position: [0, -.1],
+            velocity: [randClip()*.05, randClip()*.05]
+        },
+        {
+            position: [.1, 0],
+            velocity: [randClip()*.05, randClip()*.05]
+        },
+        {
+            position: [-.1, 0],
+            velocity: [randClip()*.05, randClip()*.05]
+        },
+    ]
+    );
+
     const triangles = triangleStruct().createFilledArray(
         [
             {
                 color: [0.001, .2, .3, 1],
                 vertices: [
-                    [0, .1],
-                    [.1, 0],
-                    [-.1, 0]
+                    0, 1, 2
                 ]
             },
             {
                 color: [.41, .1, 0.0061, 1],
                 vertices: [
-                    [0, -.1],
-                    [.1, 0],
-                    [-.1, 0]
+                    3, 4, 5
                 ]
             },
         ]
     );
+
+    const nodeBuffer = device.createBuffer({
+        label: "nodeBuffer",
+        size: nodes.data.byteLength,
+        usage: GPUBufferUsage.STORAGE |
+               GPUBufferUsage.COPY_DST |
+               GPUBufferUsage.VERTEX
+    });
 
     const triangleBuffer = device.createBuffer({
         label: "triangleBuffer",
@@ -96,12 +129,14 @@ const main = async () => {
         label: "renderBindGroup",
         layout: renderPipeline.getBindGroupLayout(0),
         entries: [
-            {binding: 0, resource: triangleBuffer}
+            {binding: 0, resource: nodeBuffer},
+            {binding: 1, resource: triangleBuffer}
         ]
     });
 
     console.log(triangles.views.colorView);
 
+    device.queue.writeBuffer(nodeBuffer, 0, nodes.data);
     device.queue.writeBuffer(triangleBuffer, 0, triangles.data);
 
     const render = () => {
