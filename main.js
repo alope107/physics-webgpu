@@ -1,3 +1,4 @@
+import { computeShaderCode } from "./compute.js";
 import { renderShaderCode } from "./render.js";
 import { startResizeObservation } from "./resize.js";
 import { nodeStruct, triangleStruct } from "./structs.js";
@@ -34,11 +35,23 @@ const main = async () => {
         format: renderFormat
     });
 
+    const computeModule = device.createShaderModule({
+        label: "compute shader module",
+        code:computeShaderCode
+    })
+    const physicsPipeline = device.createComputePipeline({
+        label: "physics pipeline",
+        layout: "auto",
+        compute: {
+            module: computeModule,
+            entryPoint: "applyPhysics"
+        }
+    });
+
     const renderModule = device.createShaderModule({
         label: "render module",
         code: renderShaderCode
     });
-
     const renderPipeline = device.createRenderPipeline({
         label: "render pipeline",
         layout: "auto",
@@ -52,7 +65,6 @@ const main = async () => {
             targets: [{format: renderFormat}]
         }
     });
-
     const renderPassDescriptor = {
         label: "render pass descriptor",
         colorAttachments: [
@@ -125,6 +137,14 @@ const main = async () => {
                GPUBufferUsage.VERTEX
     });
 
+    const physicsBindGroup = device.createBindGroup({
+        label: "physicsBindGroup",
+        layout: physicsPipeline.getBindGroupLayout(0),
+        entries: [
+            {binding: 0, resource: nodeBuffer},
+        ]
+    });
+
     const renderBindGroup = device.createBindGroup({
         label: "renderBindGroup",
         layout: renderPipeline.getBindGroupLayout(0),
@@ -143,6 +163,13 @@ const main = async () => {
         renderPassDescriptor.colorAttachments[0].view = ctx.getCurrentTexture().createView();
 
         const encoder = device.createCommandEncoder({label: "encoder"});
+        
+        const computePass = encoder.beginComputePass();
+        computePass.setPipeline(physicsPipeline);
+        computePass.setBindGroup(0, physicsBindGroup);
+        computePass.dispatchWorkgroups(nodes.count);
+        computePass.end();
+        
         const renderPass = encoder.beginRenderPass(renderPassDescriptor);
         renderPass.setPipeline(renderPipeline);
         renderPass.setBindGroup(0, renderBindGroup);
