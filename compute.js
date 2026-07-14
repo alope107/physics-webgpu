@@ -25,6 +25,7 @@ ${uniformsStruct}
         // Move elsewhere
         // let gravity = vec2f(0, -.00009);
         let restitution = .2;
+        let damping = .999;
 
         //nodes[id].velocity += gravity;
 
@@ -46,6 +47,7 @@ ${uniformsStruct}
         }
 
         nodes[id].velocity += uniforms.gravity;
+        nodes[id].velocity *= damping;
         nodes[id].position += nodes[id].velocity;
 
         // TODO: other walls?
