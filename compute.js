@@ -20,8 +20,8 @@ ${edgeStruct().code}
                                          1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
 
         // Move elsewhere
-        let gravity = vec2f(0, -.00003);
-        let restitution = .5;
+        let gravity = vec2f(0, -.00009);
+        let restitution = .2;
 
         //nodes[id].velocity += gravity;
 

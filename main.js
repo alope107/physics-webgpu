@@ -78,27 +78,32 @@ const main = async () => {
     };
 
     const vels = [[0,0],[0,0]];//[[randClip()*.05, randClip()*.05], [randClip()*.05, randClip()*.05]];
+    const transDown = .5;
     const jsNodes = [
         {
-            position: [0, .1],
+            position: [0, .1-transDown],
             velocity: vels[0]
         },
         {
-            position: [-.1, 0],
+            position: [-.1, 0-transDown],
             velocity: vels[0]
         },
         {
-            position: [0, -.1],
+            position: [0, -.1-transDown],
             velocity: vels[1]
         },
         {
-            position: [.1, 0],
+            position: [.1, 0-transDown],
+            velocity: vels[1]
+        },
+        {
+            position: [.1, .1-transDown],
             velocity: vels[1]
         },
     ];
     const nodes = nodeStruct().createFilledArray(jsNodes);
 
-    const k = .1;
+    const k = .4;
     const edges = edgeStruct().createFilledArray([
         {
             nodes: [0, 1],
@@ -125,20 +130,36 @@ const main = async () => {
             idealLength: dist(jsNodes[2].position, jsNodes[3].position),
             k
         },
+        {
+            nodes: [4, 3],
+            idealLength: dist(jsNodes[4].position, jsNodes[3].position),
+            k
+        },
+        {
+            nodes: [4, 0],
+            idealLength: dist(jsNodes[4].position, jsNodes[0].position),
+            k
+        },
     ]);
 
     const triangles = triangleStruct().createFilledArray(
         [
             {
-                color: [0.001, .2, .3, 1],
+                color: [.7, .3, 0.6, 1],
                 vertices: [
                     0, 1, 3
                 ]
             },
             {
-                color: [.41, .1, 0.0061, 1],
+                color: [.7, .3, 0.6, 1],
                 vertices: [
                     1, 2, 3
+                ]
+            },
+            {
+                color: [.7, .3, 0.6, 1],
+                vertices: [
+                    0, 3, 4
                 ]
             },
         ]
