@@ -77,3 +77,46 @@ export const nodeStruct = () => {
         createFilledArray
     };
 };
+
+export const edgeStruct = () => { 
+    const code = /* wgsl */`
+        struct Edge {
+            nodes: vec2u, // 8 bytes // ids of nodes
+            idealLength: f32, // 4 bytes
+            k: f32 // 4 bytes
+        } // 16 byts
+    `
+    const byteCount = 16;
+    const floatCount = byteCount / 4;
+    const u32Count = byteCount / 4;
+    const createEmptyArray = (edgeCount) => {
+        const data = new ArrayBuffer(byteCount * edgeCount);
+        return {
+            data,
+            views: {
+                nodesView: new Uint32Array(data, 0),
+                idealLengthView: new Float32Array(data, 8),
+                kView: new Float32Array(data, 12)
+            },
+            count: edgeCount
+        };
+    };
+    const createFilledArray = (edgeData) => {
+        const data = createEmptyArray(edgeData.length);
+        const {nodesView, idealLengthView, kView} = data.views;
+        edgeData.forEach(({nodes, idealLength, k}, i) => {
+            console.log(nodes, idealLength, k);
+            nodesView.set(nodes, i*u32Count);
+            idealLengthView.set([idealLength], i*floatCount);
+            kView.set([k], i*floatCount);
+        });
+        return data;
+    };
+    return {
+        code,
+        byteCount,
+        floatCount,
+        createEmptyArray,
+        createFilledArray
+    };
+};

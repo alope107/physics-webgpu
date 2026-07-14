@@ -1,8 +1,9 @@
 import { computeShaderCode } from "./compute.js";
 import { renderShaderCode } from "./render.js";
 import { startResizeObservation } from "./resize.js";
-import { nodeStruct, triangleStruct } from "./structs.js";
+import { edgeStruct, nodeStruct, triangleStruct } from "./structs.js";
 import { randClip } from "./random.js";
+import { dist } from "./vectors.js";
 
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
@@ -77,7 +78,7 @@ const main = async () => {
     };
 
     const vels = [[0,0],[0,0]];//[[randClip()*.05, randClip()*.05], [randClip()*.05, randClip()*.05]];
-    const nodes = nodeStruct().createFilledArray([
+    const jsNodes = [
         {
             position: [0, .1],
             velocity: vels[0]
@@ -94,8 +95,37 @@ const main = async () => {
             position: [.1, 0],
             velocity: vels[1]
         },
-    ]
-    );
+    ];
+    const nodes = nodeStruct().createFilledArray(jsNodes);
+
+    const k = .1;
+    const edges = edgeStruct().createFilledArray([
+        {
+            nodes: [0, 1],
+            idealLength: dist(jsNodes[0].position, jsNodes[1].position),
+            k
+        },
+        {
+            nodes: [0, 3],
+            idealLength: dist(jsNodes[0].position, jsNodes[3].position),
+            k
+        },
+        {
+            nodes: [1, 3],
+            idealLength: dist(jsNodes[1].position, jsNodes[3].position),
+            k
+        },
+        {
+            nodes: [1, 2],
+            idealLength: dist(jsNodes[1].position, jsNodes[2].position),
+            k
+        },
+        {
+            nodes: [2, 3],
+            idealLength: dist(jsNodes[2].position, jsNodes[3].position),
+            k
+        },
+    ]);
 
     const triangles = triangleStruct().createFilledArray(
         [
@@ -122,6 +152,13 @@ const main = async () => {
                GPUBufferUsage.VERTEX
     });
 
+    const edgeBuffer = device.createBuffer({
+        label: "edgeBuffer",
+        size: edges.data.byteLength,
+        usage: GPUBufferUsage.STORAGE |
+               GPUBufferUsage.COPY_DST 
+    });
+
     const triangleBuffer = device.createBuffer({
         label: "triangleBuffer",
         size: triangles.data.byteLength,
@@ -135,6 +172,7 @@ const main = async () => {
         layout: physicsPipeline.getBindGroupLayout(0),
         entries: [
             {binding: 0, resource: nodeBuffer},
+            {binding: 1, resource: edgeBuffer},
         ]
     });
 
@@ -147,9 +185,10 @@ const main = async () => {
         ]
     });
 
-    console.log(triangles.views.colorView);
+    console.log(new Float32Array(edges.data));
 
     device.queue.writeBuffer(nodeBuffer, 0, nodes.data);
+    device.queue.writeBuffer(edgeBuffer, 0, edges.data);
     device.queue.writeBuffer(triangleBuffer, 0, triangles.data);
 
     const render = () => {
