@@ -78,26 +78,27 @@ const main = async () => {
     };
 
     const vels = [[0,0],[0,0]];//[[randClip()*.05, randClip()*.05], [randClip()*.05, randClip()*.05]];
-    const transDown = .5;
+    const transDown = .2;
+    const scale = 2;
     const jsNodes = [
         {
-            position: [0, .1-transDown],
+            position: [0*scale, (.1-transDown)*scale],
             velocity: vels[0]
         },
         {
-            position: [-.1, 0-transDown],
+            position: [-.1*scale, (0-transDown)*scale],
             velocity: vels[0]
         },
         {
-            position: [0, -.1-transDown],
+            position: [0*scale, (-.1-transDown)*scale],
             velocity: vels[1]
         },
         {
-            position: [.1, 0-transDown],
+            position: [.1*scale, (0-transDown)*scale],
             velocity: vels[1]
         },
         {
-            position: [.1, .1-transDown],
+            position: [.1*scale, (.1-transDown)*scale],
             velocity: vels[1]
         },
     ];
