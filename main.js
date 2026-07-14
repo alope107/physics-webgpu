@@ -83,10 +83,6 @@ const main = async () => {
             velocity: vels[0]
         },
         {
-            position: [.1, 0],
-            velocity: vels[0]
-        },
-        {
             position: [-.1, 0],
             velocity: vels[0]
         },
@@ -98,10 +94,6 @@ const main = async () => {
             position: [.1, 0],
             velocity: vels[1]
         },
-        {
-            position: [-.1, 0],
-            velocity: vels[1]
-        },
     ]
     );
 
@@ -110,13 +102,13 @@ const main = async () => {
             {
                 color: [0.001, .2, .3, 1],
                 vertices: [
-                    0, 1, 2
+                    0, 1, 3
                 ]
             },
             {
                 color: [.41, .1, 0.0061, 1],
                 vertices: [
-                    3, 4, 5
+                    1, 2, 3
                 ]
             },
         ]
