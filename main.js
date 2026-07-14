@@ -1,5 +1,6 @@
 import { renderShaderCode } from "./render.js";
 import { startResizeObservation } from "./resize.js";
+import { triangleStruct } from "./structs.js";
 
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
@@ -62,13 +63,55 @@ const main = async () => {
         ]
     };
 
+    const triangles = triangleStruct().createFilledArray(
+        [
+            {
+                color: [0.001, .2, .3, 1],
+                vertices: [
+                    [0, .1],
+                    [.1, 0],
+                    [-.1, 0]
+                ]
+            },
+            {
+                color: [.41, .1, 0.0061, 1],
+                vertices: [
+                    [0, -.1],
+                    [.1, 0],
+                    [-.1, 0]
+                ]
+            },
+        ]
+    );
+
+    const triangleBuffer = device.createBuffer({
+        label: "triangleBuffer",
+        size: triangles.data.byteLength,
+        usage: GPUBufferUsage.STORAGE |
+               GPUBufferUsage.COPY_DST |
+               GPUBufferUsage.VERTEX
+    });
+
+    const renderBindGroup = device.createBindGroup({
+        label: "renderBindGroup",
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+            {binding: 0, resource: triangleBuffer}
+        ]
+    });
+
+    console.log(triangles.views.colorView);
+
+    device.queue.writeBuffer(triangleBuffer, 0, triangles.data);
+
     const render = () => {
         renderPassDescriptor.colorAttachments[0].view = ctx.getCurrentTexture().createView();
 
         const encoder = device.createCommandEncoder({label: "encoder"});
         const renderPass = encoder.beginRenderPass(renderPassDescriptor);
         renderPass.setPipeline(renderPipeline);
-        renderPass.draw(3);
+        renderPass.setBindGroup(0, renderBindGroup);
+        renderPass.draw(3, triangles.count);
         renderPass.end();
 
         const commandBuffer = encoder.finish();

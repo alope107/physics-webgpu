@@ -1,15 +1,26 @@
-export const renderShaderCode = /* wgsl */ `
+import { triangleStruct } from "./structs.js";
 
-@vertex fn triangle(@builtin(vertex_index) vertexIdx : u32) -> @builtin(position) vec4f {
-    let vertices = array<vec2f, 3>(
-        vec2f(0., .1),
-        vec2f(.05, 0.),
-        vec2f(-.05, 0.)
-    );
-    return vec4(vertices[vertexIdx], 0, 1);
+export const renderShaderCode = /* wgsl */ `
+${triangleStruct().code}
+
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(0) color : vec4f
 }
 
-@fragment fn solidColor() -> @location(0) vec4f {
-    return vec4(1., 0, 1., 1.);
+@group(0) @binding(0) var<storage, read> triangles : array<Triangle>;
+
+@vertex fn triangle(
+    @builtin(vertex_index) vertexIdx : u32,
+    @builtin(instance_index) triangleIdx: u32) -> VertexOutput {
+        
+        return VertexOutput(
+            vec4(triangles[triangleIdx].vertices[vertexIdx], 0, 1),
+            triangles[triangleIdx].color
+        );
+}
+
+@fragment fn solidColor(fragInput : VertexOutput) -> @location(0) vec4f {
+    return fragInput.color;
 }
 `;
