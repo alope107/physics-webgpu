@@ -8,8 +8,6 @@ import { dist } from "./vectors.js";
 let defaultAccel = {x:0, y: -9.8, z:0};
 let accel = {x: 0, y:0, z:0};
 
-
-
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
         powerPreference: "high-performance",
@@ -82,7 +80,7 @@ const main = async () => {
         ]
     };
 
-    const vels = [[0,0],[0,0]];//[[randClip()*.05, randClip()*.05], [randClip()*.05, randClip()*.05]];
+    const vels = [[0,0],[0,0]];
     const transDown = .35;
     const scale = 2;
     const jsNodes = [
@@ -233,17 +231,18 @@ const main = async () => {
     const uniformBuffer = device.createBuffer({
         label: "uniform buffer",
         size: uniformData.byteLength,
-        usage: GPUBufferUsage.UNIFORM | // We'll be using it as uniform (think globals) in the shaders
-               GPUBufferUsage.COPY_DST  // We need this because we'll be copying to it from the CPU
+        usage: GPUBufferUsage.UNIFORM | 
+               GPUBufferUsage.COPY_DST 
     });
 
     const physicsBindGroup = device.createBindGroup({
         label: "physicsBindGroup",
         layout: physicsPipeline.getBindGroupLayout(0),
         entries: [
-            {binding: 0, resource: nodeBuffer},
-            {binding: 1, resource: edgeBuffer},
-            {binding: 2, resource: uniformBuffer}
+            {binding: 0, resource: uniformBuffer},
+            {binding: 1, resource: nodeBuffer},
+            {binding: 2, resource: edgeBuffer},
+            
         ]
     });
 
@@ -288,7 +287,6 @@ const main = async () => {
         const factor = 40000;
         uniformData[0] = accel.x/factor;
         uniformData[1] = accel.y/factor;
-        // disp.innerText = uniformData[0] + " " + uniformData[1];
         device.queue.writeBuffer(uniformBuffer, 0, uniformData);
         render();
         requestAnimationFrame(animationFrame);
@@ -296,25 +294,17 @@ const main = async () => {
     requestAnimationFrame(animationFrame);
 };
 
-//
-
-const accelDemo = async (e) => {
-    let disp = document.getElementById("disp");
-    disp.innerText = accel.x + " " + accel.y + " " + accel.z + "!!!";
-    disp.remove();
+const initializeAccelerometer = async (e) => {
+    document.getElementById("disp").remove();
     window.addEventListener("devicemotion", (event) => {
         let accelInclG = event.accelerationIncludingGravity;
         if(accelInclG.x == null) {
             accel = {...defaultAccel};
-            // disp.innerText = accel.x + " " + accel.y + " " + accel.z + "!!!";
         } else {
-            // disp.innerText = accel.x + " " + accel.y + " " + accel.z + "!!!";
             accel.x = accelInclG.x*-1;
             accel.y = accelInclG.y*-1;
             accel.z = accelInclG.z;
         }
-        
-        
     });
     main();
 }
@@ -325,7 +315,7 @@ if(!window.matchMedia('(hover: hover)').matches && window.matchMedia('(pointer: 
     let display = document.body.appendChild(document.createElement("h1"));
     display.innerText = "Press me";
     display.id="disp";
-    display.addEventListener("pointerup", accelDemo);
+    display.addEventListener("pointerup", initializeAccelerometer);
 } else {
     accel = defaultAccel;
     main();

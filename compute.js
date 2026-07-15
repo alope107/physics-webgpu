@@ -9,9 +9,10 @@ ${edgeStruct().code}
 ${uniformsStruct}
 
 
-@group(0) @binding(0) var<storage, read_write> nodes : array<Node>;
-@group(0) @binding(1) var<storage, read_write> edges : array<Edge>; 
-@group(0) @binding(2) var<uniform> uniforms : Uniforms;
+@group(0) @binding(0) var<uniform> uniforms : Uniforms;
+@group(0) @binding(1) var<storage, read_write> nodes : array<Node>;
+@group(0) @binding(2) var<storage, read_write> edges : array<Edge>; 
+
 
 
 // TODO: better workgroup size UPDATE THE GLOBAL INDEX CALC IF CHANGED
@@ -22,12 +23,8 @@ ${uniformsStruct}
         let id = global_invocation_index(workgroup_id, local_invocation_index, num_workgroups,
                                          1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
 
-        // Move elsewhere
-        // let gravity = vec2f(0, -.00009);
         let restitution = .2;
         let damping = .999;
-
-        //nodes[id].velocity += gravity;
 
         // WILDLY INEFFICIENT
         for(var i = 0u; i < arrayLength(&edges); i++) {
