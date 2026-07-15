@@ -5,8 +5,7 @@ import { edgeStruct, nodeStruct, triangleStruct } from "./structs.js";
 import { randClip } from "./random.js";
 import { dist } from "./vectors.js";
 
-let defaultAccel = {x:0, y: -9.8, z:0};
-let accel = {x: 0, y:0, z:0};
+let accel = {x: 0, y:-9.8, z:0};
 
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
@@ -295,12 +294,10 @@ const main = async () => {
 };
 
 const initializeAccelerometer = async (e) => {
-    document.getElementById("disp").remove();
+    document.getElementById("prompt").remove();
     window.addEventListener("devicemotion", (event) => {
         let accelInclG = event.accelerationIncludingGravity;
-        if(accelInclG.x == null) {
-            accel = {...defaultAccel};
-        } else {
+        if(accelInclG.x != null) {
             accel.x = accelInclG.x*-1;
             accel.y = accelInclG.y*-1;
             accel.z = accelInclG.z;
@@ -312,12 +309,11 @@ const initializeAccelerometer = async (e) => {
 // Only need user input if on mobile so accelerometer can be accessed
 // Otherwise just start immedately on desktop
 if(!window.matchMedia('(hover: hover)').matches && window.matchMedia('(pointer: coarse)').matches) {
-    let display = document.body.appendChild(document.createElement("h1"));
-    display.innerText = "Press me";
-    display.id="disp";
-    display.addEventListener("pointerup", initializeAccelerometer);
+    let userPrompt = document.body.appendChild(document.createElement("h1"));
+    userPrompt.innerText = "Press me";
+    userPrompt.id="prompt";
+    userPrompt.addEventListener("pointerup", initializeAccelerometer);
 } else {
-    accel = defaultAccel;
     main();
 }
 
