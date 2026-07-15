@@ -106,6 +106,18 @@ const main = async () => {
             position: [.1*scale, (.1-transDown)*scale],
             velocity: vels[1]
         },
+        {
+            position: [-.1, -.05],
+            velocity: vels[1]
+        },
+        {
+            position: [-.2, -.1],
+            velocity: vels[1]
+        },
+        {
+            position: [-.2, -.4],
+            velocity: vels[1]
+        },
     ];
     const nodes = nodeStruct().createFilledArray(jsNodes);
 
@@ -146,6 +158,21 @@ const main = async () => {
             idealLength: dist(jsNodes[4].position, jsNodes[0].position),
             k
         },
+        {
+            nodes: [5, 6],
+            idealLength: dist(jsNodes[5].position, jsNodes[6].position),
+            k
+        },
+        {
+            nodes: [5, 7],
+            idealLength: dist(jsNodes[5].position, jsNodes[7].position),
+            k
+        },
+        {
+            nodes: [6, 7],
+            idealLength: dist(jsNodes[6].position, jsNodes[7].position),
+            k
+        },
     ]);
 
     const triangles = triangleStruct().createFilledArray(
@@ -166,6 +193,12 @@ const main = async () => {
                 color: [.7, .3, 0.6, 1],
                 vertices: [
                     0, 3, 4
+                ]
+            },
+            {
+                color: [.4, .7, 0.1, 1],
+                vertices: [
+                    5, 6, 7
                 ]
             },
         ]
@@ -286,9 +319,17 @@ const accelDemo = async (e) => {
     main();
 }
 
-let display = document.body.appendChild(document.createElement("h1"));
-display.innerText = "Press me";
-display.id="disp";
-display.addEventListener("pointerup", accelDemo);
+// Only need user input if on mobile so accelerometer can be accessed
+// Otherwise just start immedately on desktop
+if(!window.matchMedia('(hover: hover)').matches && window.matchMedia('(pointer: coarse)').matches) {
+    let display = document.body.appendChild(document.createElement("h1"));
+    display.innerText = "Press me";
+    display.id="disp";
+    display.addEventListener("pointerup", accelDemo);
+} else {
+    accel = defaultAccel;
+    main();
+}
+
 
 
