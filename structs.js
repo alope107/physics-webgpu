@@ -44,10 +44,12 @@ export const nodeStruct = () => {
     const code = /* wgsl */`
         struct Node {
             position: vec2f, // 8 bytes
-            velocity: vec2f  // 8 bytes
-        } // total: 16 bytes
+            velocity: vec2f,  // 8 bytes
+            overlapping: u32 // 4 bytes // this is really just a bool right now, so it's overkill. Merge with others later?
+            // pad 4 bytes
+        } // total: 24 bytes
     `
-    const byteCount = 16;
+    const byteCount = 24;
     const floatCount = byteCount / 4;
     const createEmptyArray = (nodeCount) => {
         const data = new ArrayBuffer(byteCount * nodeCount);
@@ -56,12 +58,14 @@ export const nodeStruct = () => {
             views: {
                 positionView: new Float32Array(data, 0),
                 velocityView: new Float32Array(data, 8),
+                overlappingView: new Uint32Array(data, 16),
             },
             count: nodeCount
         };
     };
     const createFilledArray = (nodeData) => {
         const data = createEmptyArray(nodeData.length);
+        // for now overlapping will always default to 0
         const {positionView, velocityView} = data.views;
         nodeData.forEach(({position, velocity}, i) => {
             positionView.set(position, i*floatCount);
