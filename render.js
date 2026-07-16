@@ -20,7 +20,7 @@ struct VertexOutput {
         let nodeId = triangle.vertices[vertexIdx];
         return VertexOutput(
             vec4(nodes[nodeId].position, 0, 1),
-            triangle.color
+            select(vec4f(1., 0., 0., 1.), triangle.color, nodes[nodeId].overlapping == 0) // turn red if overlapping
         );
 }
 

@@ -1,5 +1,6 @@
 import { edgeStruct, nodeStruct, uniformsStruct } from "./structs.js";
 import { global_invocation_index } from "./linear_indexing.js";
+import { intersection } from "./vectors.js";
 
 export const computeShaderCode = /* wgsl */ `
 ${global_invocation_index}
@@ -7,6 +8,7 @@ ${global_invocation_index}
 ${nodeStruct().code}
 ${edgeStruct().code}
 ${uniformsStruct}
+${intersection}
 
 
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
@@ -26,6 +28,8 @@ ${uniformsStruct}
         let restitution = .2;
         let damping = .999;
 
+        nodes[id].overlapping = 0;
+
         // WILDLY INEFFICIENT
         for(var i = 0u; i < arrayLength(&edges); i++) {
             let edge = edges[i];
@@ -40,7 +44,25 @@ ${uniformsStruct}
                 let currentLength = length(delta);
                 let currentForce = (edge.idealLength - currentLength) * -edge.k;
                 nodes[id].velocity += delta * (currentForce / currentLength);
+
+                // EVEN MORE WILDLY INEFFICIENT
+                // ALSO WRONG
+                for(var j = 0u; j < arrayLength(&edges); j++) {
+                    if(j == i) {continue;}
+                    let otherEdge = edges[j];
+                    if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
+                       otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
+                        if(intersection(nodes[id].position, nodes[otherId].position,
+                                        nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
+                                            nodes[id].overlapping = 1;
+                                        }
+                    }
+                }
+
+            
             }
+
+            
         }
 
         nodes[id].velocity += uniforms.gravity;
