@@ -144,36 +144,36 @@ const main = async () => {
             idealLength: dist(jsNodes[1].position, jsNodes[2].position),
             k
         },
-        {
-            nodes: [2, 3],
-            idealLength: dist(jsNodes[2].position, jsNodes[3].position),
-            k:.05//TODO: CHANGE ME BACK
-        },
-        {
-            nodes: [4, 3],
-            idealLength: dist(jsNodes[4].position, jsNodes[3].position),
-            k
-        },
-        {
-            nodes: [4, 0],
-            idealLength: dist(jsNodes[4].position, jsNodes[0].position),
-           k:.05//TODO: CHANGE ME BACK
-        },
-        {
-            nodes: [5, 6],
-            idealLength: dist(jsNodes[5].position, jsNodes[6].position),
-            k
-        },
-        {
-            nodes: [5, 7],
-            idealLength: dist(jsNodes[5].position, jsNodes[7].position),
-         k:.05//TODO: CHANGE ME BACK
-        },
-        {
-            nodes: [6, 7],
-            idealLength: dist(jsNodes[6].position, jsNodes[7].position),
-            k
-        },
+        // {
+        //     nodes: [2, 3],
+        //     idealLength: dist(jsNodes[2].position, jsNodes[3].position),
+        //     k:.05//TODO: CHANGE ME BACK
+        // },
+        // {
+        //     nodes: [4, 3],
+        //     idealLength: dist(jsNodes[4].position, jsNodes[3].position),
+        //     k
+        // },
+        // {
+        //     nodes: [4, 0],
+        //     idealLength: dist(jsNodes[4].position, jsNodes[0].position),
+        //    k:.05//TODO: CHANGE ME BACK
+        // },
+        // {
+        //     nodes: [5, 6],
+        //     idealLength: dist(jsNodes[5].position, jsNodes[6].position),
+        //     k
+        // },
+        // {
+        //     nodes: [5, 7],
+        //     idealLength: dist(jsNodes[5].position, jsNodes[7].position),
+        //  k:.05//TODO: CHANGE ME BACK
+        // },
+        // {
+        //     nodes: [6, 7],
+        //     idealLength: dist(jsNodes[6].position, jsNodes[7].position),
+        //     k
+        // },
     ]);
 
     const triangles = triangleStruct().createFilledArray(
@@ -184,24 +184,24 @@ const main = async () => {
                     0, 1, 3
                 ]
             },
-            {
-                color: [.7, .3, 0.6, 1],
-                vertices: [
-                    1, 2, 3
-                ]
-            },
-            {
-                color: [.7, .3, 0.6, 1],
-                vertices: [
-                    0, 3, 4
-                ]
-            },
-            {
-                color: [.4, .7, 0.1, 1],
-                vertices: [
-                    5, 6, 7
-                ]
-            },
+            // {
+            //     color: [.7, .3, 0.6, 1],
+            //     vertices: [
+            //         1, 2, 3
+            //     ]
+            // },
+            // {
+            //     color: [.7, .3, 0.6, 1],
+            //     vertices: [
+            //         0, 3, 4
+            //     ]
+            // },
+            // {
+            //     color: [.4, .7, 0.1, 1],
+            //     vertices: [
+            //         5, 6, 7
+            //     ]
+            // },
         ]
     );
 
@@ -210,25 +210,17 @@ const main = async () => {
         size: nodes.data.byteLength,
         usage: GPUBufferUsage.STORAGE |
                GPUBufferUsage.COPY_DST |
-               GPUBufferUsage.COPY_SRC |
+               GPUBufferUsage.COPY_SRC | // used for debugging
                GPUBufferUsage.VERTEX
     });
-
-    let debugBuffer;
-    if(DEBUG) {
-        debugBuffer = device.createBuffer({
-            label: "debugBuffer",
-            size: nodes.data.byteLength,
-            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-        });
-    }
-    console.log(debugBuffer);
 
     const edgeBuffer = device.createBuffer({
         label: "edgeBuffer",
         size: edges.data.byteLength,
         usage: GPUBufferUsage.STORAGE |
+               GPUBufferUsage.COPY_SRC | // used for debugging
                GPUBufferUsage.COPY_DST 
+               
     });
 
     const triangleBuffer = device.createBuffer({
@@ -236,6 +228,7 @@ const main = async () => {
         size: triangles.data.byteLength,
         usage: GPUBufferUsage.STORAGE |
                GPUBufferUsage.COPY_DST |
+               GPUBufferUsage.COPY_SRC | // used for debugging
                GPUBufferUsage.VERTEX
     });
 
@@ -269,6 +262,21 @@ const main = async () => {
         ]
     });
 
+    let debugBuffer;
+    let debugEdgeBuffer;
+    if(DEBUG) {
+        debugBuffer = device.createBuffer({
+            label: "debugNodeBuffer",
+            size: nodes.data.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+        });
+        debugEdgeBuffer = device.createBuffer({
+            label: "debugEdgeBuffer",
+            size: edges.data.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+        });
+    }
+
     device.queue.writeBuffer(nodeBuffer, 0, nodes.data);
     device.queue.writeBuffer(edgeBuffer, 0, edges.data);
     device.queue.writeBuffer(triangleBuffer, 0, triangles.data);
@@ -291,7 +299,10 @@ const main = async () => {
         renderPass.draw(3, triangles.count);
         renderPass.end();
 
-        if(DEBUG) {encoder.copyBufferToBuffer(nodeBuffer, 0, debugBuffer, 0, nodeBuffer.size);}
+        if(DEBUG) {
+            encoder.copyBufferToBuffer(nodeBuffer, 0, debugBuffer, 0, nodeBuffer.size);
+            encoder.copyBufferToBuffer(edgeBuffer, 0, debugEdgeBuffer, 0, edgeBuffer.size);
+        }
 
         const commandBuffer = encoder.finish();
         device.queue.submit([commandBuffer]);
@@ -306,8 +317,11 @@ const main = async () => {
         if(DEBUG && fc%DEBUG_INTERVAL == 0) {
             await debugBuffer.mapAsync(GPUMapMode.READ);
             const result = Array.from(new Float32Array(debugBuffer.getMappedRange()));
-            console.log(result);
+            //console.log(result);
             debugBuffer.unmap();
+            await debugEdgeBuffer.mapAsync(GPUMapMode.READ);
+            console.log(Array.from(new Uint32Array(debugEdgeBuffer.getMappedRange())));
+            debugEdgeBuffer.unmap();
             if(fc >= DEBUG_CUTOFF) {return;}
         }
         render();

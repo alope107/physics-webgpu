@@ -42,7 +42,7 @@ ${intersection}
 
                 let delta = nodes[otherId].position - nodes[id].position;
                 let currentLength = length(delta);
-                let currentForce = (edge.idealLength - currentLength) * -edge.k;
+                let currentForce = (edge.idealLength - currentLength) * -.2;//-edge.k;
                 nodes[id].velocity += delta * (currentForce / currentLength);
 
                 // EVEN MORE WILDLY INEFFICIENT
@@ -71,7 +71,7 @@ ${intersection}
 
         nodes[id].velocity += uniforms.gravity;
         nodes[id].velocity *= damping;
-        // nodes[id].position += nodes[id].velocity;
+        nodes[id].position += nodes[id].velocity;
 
         // TODO: other walls?
         // TODO: branchless?
