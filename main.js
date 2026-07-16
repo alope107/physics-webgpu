@@ -241,7 +241,7 @@ const main = async () => {
             {binding: 0, resource: uniformBuffer},
             {binding: 1, resource: nodeBuffer},
             {binding: 2, resource: edgeBuffer},
-            
+            {binding: 3, resource: triangleBuffer}
         ]
     });
 

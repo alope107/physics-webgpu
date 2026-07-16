@@ -1,19 +1,23 @@
-import { edgeStruct, nodeStruct, uniformsStruct } from "./structs.js";
+import { edgeStruct, nodeStruct, triangleStruct, uniformsStruct } from "./structs.js";
 import { global_invocation_index } from "./linear_indexing.js";
-import { intersection } from "./vectors.js";
+import { barycentric, intersection } from "./vectors.js";
 
 export const computeShaderCode = /* wgsl */ `
 ${global_invocation_index}
 
 ${nodeStruct().code}
 ${edgeStruct().code}
+${triangleStruct().code}
 ${uniformsStruct}
+
+${barycentric}
 ${intersection}
 
 
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 @group(0) @binding(1) var<storage, read_write> nodes : array<Node>;
 @group(0) @binding(2) var<storage, read_write> edges : array<Edge>; 
+@group(0) @binding(3) var<storage, read_write> triangles : array<Triangle>; 
 
 
 
@@ -27,8 +31,6 @@ ${intersection}
 
         let restitution = .2;
         let damping = .999;
-
-        nodes[id].overlapping = 0;
 
         // WILDLY INEFFICIENT
         for(var i = 0u; i < arrayLength(&edges); i++) {
@@ -47,22 +49,21 @@ ${intersection}
 
                 // EVEN MORE WILDLY INEFFICIENT
                 // ALSO WRONG
-                for(var j = 0u; j < arrayLength(&edges); j++) {
-                    if(j == i) {continue;}
-                    let otherEdge = edges[j];
-                    if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
-                       otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
-                        if(intersection(nodes[id].position, nodes[otherId].position,
-                                        nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
-                                            nodes[id].overlapping = 1;
-                                        }
-                    }
-                }
+                // Causes UB on mobile...
+                // for(var j = 0u; j < arrayLength(&edges); j++) {
+                //     if(j == i) {continue;}
+                //     let otherEdge = edges[j];
+                //     if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
+                //        otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
+                //         if(intersection(nodes[id].position, nodes[otherId].position,
+                //                         nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
+                //                             nodes[id].overlapping = 1;
+                //                         }
+                //     }
+                // }
 
             
             }
-
-            
         }
 
         nodes[id].velocity += uniforms.gravity;
@@ -86,6 +87,24 @@ ${intersection}
         if(nodes[id].position.x > 1) {
             nodes[id].position.x = 1;
             nodes[id].velocity.x *= -1 * restitution;
+        }
+
+        // INEFFICIENT collision checking
+        nodes[id].overlapping = 0;
+        for(var i = 0u; i < arrayLength(&triangles); i++) {
+            let triangle = triangles[i];
+            let t1 = nodes[triangle.vertices[0]].position;
+            let t2 = nodes[triangle.vertices[0]].position;
+            let t3 = nodes[triangle.vertices[0]].position;
+            if(triangle.vertices[0] != id &&
+               triangle.vertices[1] != id &&
+               triangle.vertices[2] != id &&
+               pointInTri(nodes[id].position,
+                          nodes[triangle.vertices[0]].position,
+                          nodes[triangle.vertices[1]].position,
+                          nodes[triangle.vertices[2]].position)) {
+                    nodes[id].overlapping = 1;
+                }
         }
     }
 `;
