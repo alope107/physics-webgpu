@@ -40,6 +40,7 @@ ${intersection}
 
         let restitution = .2;
         let damping = .999;
+        nodes[id].overlapping = 0;
 
         // WILDLY INEFFICIENT
         for(var i = 0u; i < arrayLength(&edges); i++) {
@@ -58,18 +59,17 @@ ${intersection}
 
                 // EVEN MORE WILDLY INEFFICIENT
                 // ALSO WRONG
-                // Causes UB on mobile...
-                // for(var j = 0u; j < arrayLength(&edges); j++) {
-                //     if(j == i) {continue;}
-                //     let otherEdge = edges[j];
-                //     if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
-                //        otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
-                //         if(intersection(nodes[id].position, nodes[otherId].position,
-                //                         nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
-                //                             nodes[id].overlapping = 1;
-                //                         }
-                //     }
-                // }
+                for(var j = 0u; j < arrayLength(&edges); j++) {
+                    if(j == i) {continue;}
+                    let otherEdge = edges[j];
+                    if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
+                       otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
+                        if(intersection(nodes[id].position, nodes[otherId].position,
+                                        nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
+                                            nodes[id].overlapping = 1;
+                                        }
+                    }
+                }
 
             
             }
@@ -100,21 +100,21 @@ ${intersection}
 
         _ = triangles[0].vertices[0];
         // INEFFICIENT and INCORRECT collision checking
-        nodes[id].overlapping = 0;
-        for(var i = 0u; i < arrayLength(&triangles); i++) {
-            let triangle = triangles[i];
-            let t1 = nodes[triangle.vertices[0]].position;
-            let t2 = nodes[triangle.vertices[0]].position;
-            let t3 = nodes[triangle.vertices[0]].position;
-            if(triangle.vertices[0] != id &&
-               triangle.vertices[1] != id &&
-               triangle.vertices[2] != id &&
-               pointInTri(nodes[id].position,
-                          nodes[triangle.vertices[0]].position,
-                          nodes[triangle.vertices[1]].position,
-                          nodes[triangle.vertices[2]].position)) {
-                    nodes[id].overlapping = 1;
-                }
-        }
+        // Star of David overlaps not caught :(
+        // for(var i = 0u; i < arrayLength(&triangles); i++) {
+        //     let triangle = triangles[i];
+        //     let t1 = nodes[triangle.vertices[0]].position;
+        //     let t2 = nodes[triangle.vertices[0]].position;
+        //     let t3 = nodes[triangle.vertices[0]].position;
+        //     if(triangle.vertices[0] != id &&
+        //        triangle.vertices[1] != id &&
+        //        triangle.vertices[2] != id &&
+        //        pointInTri(nodes[id].position,
+        //                   nodes[triangle.vertices[0]].position,
+        //                   nodes[triangle.vertices[1]].position,
+        //                   nodes[triangle.vertices[2]].position)) {
+        //             nodes[id].overlapping = 1;
+        //         }
+        // }
     }
 `;

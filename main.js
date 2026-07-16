@@ -11,6 +11,8 @@ const DEBUG = false;
 const DEBUG_INTERVAL = 10;
 const DEBUG_CUTOFF = 1000;
 
+const TRIANGLE_COUNT = 10;
+
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
         powerPreference: "high-performance",
@@ -83,7 +85,7 @@ const main = async () => {
         ]
     };
 
-    const jsStructData = randTriangles(5, .2);
+    const jsStructData = randTriangles(TRIANGLE_COUNT, .2);
     const nodes = nodeStruct().createFilledArray(jsStructData.nodes);
     const edges = edgeStruct().createFilledArray(jsStructData.edges);
     const triangles = triangleStruct().createFilledArray(jsStructData.triangles);
