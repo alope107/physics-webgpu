@@ -17,7 +17,10 @@ ${intersection}
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 @group(0) @binding(1) var<storage, read_write> nodes : array<Node>;
 @group(0) @binding(2) var<storage, read_write> edges : array<Edge>; 
-@group(0) @binding(3) var<storage, read_write> triangles : array<Triangle>; 
+@group(0) @binding(3) var<storage, read_write> triangles : array<Triangle>;
+
+// DEBUG - count how times each id is hit
+// @group(0) @binding(4) var<storage, read_write> counts : array<atomic<u32>>;
 
 
 
@@ -28,6 +31,12 @@ ${intersection}
     @builtin(num_workgroups) num_workgroups: vec3<u32>) {
         let id = global_invocation_index(workgroup_id, local_invocation_index, num_workgroups,
                                          1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
+
+        if(id > arrayLength(&nodes)) {return;}
+
+        // DEBUG
+        // Counting how mnay invocations per id - worried things might be double/undercounted?
+        // atomicAdd(&counts[id], 1);
 
         let restitution = .2;
         let damping = .999;
@@ -89,7 +98,8 @@ ${intersection}
             nodes[id].velocity.x *= -1 * restitution;
         }
 
-        // INEFFICIENT collision checking
+        _ = triangles[0].vertices[0];
+        // INEFFICIENT and INCORRECT collision checking
         nodes[id].overlapping = 0;
         for(var i = 0u; i < arrayLength(&triangles); i++) {
             let triangle = triangles[i];

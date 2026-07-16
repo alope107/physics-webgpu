@@ -2,10 +2,14 @@ import { computeShaderCode } from "./compute.js";
 import { renderShaderCode } from "./render.js";
 import { startResizeObservation } from "./resize.js";
 import { edgeStruct, nodeStruct, triangleStruct } from "./structs.js";
-import { randClip } from "./random.js";
+import { randClip, randTriangles, randRange } from "./random.js";
 import { dist } from "./vectors.js";
 
 let accel = {x: 0, y:-9.8, z:0};
+
+const DEBUG = false;
+const DEBUG_INTERVAL = 10;
+const DEBUG_CUTOFF = 1000;
 
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
@@ -79,143 +83,27 @@ const main = async () => {
         ]
     };
 
-    const vels = [[0,0],[0,0]];
-    const transDown = .35;
-    const scale = 2;
-    const jsNodes = [
-        {
-            position: [0*scale, (.1-transDown)*scale],
-            velocity: vels[0]
-        },
-        {
-            position: [-.1*scale, (0-transDown)*scale],
-            velocity: vels[0]
-        },
-        {
-            position: [0*scale, (-.1-transDown)*scale],
-            velocity: vels[1]
-        },
-        {
-            position: [.1*scale, (0-transDown)*scale],
-            velocity: vels[1]
-        },
-        {
-            position: [.1*scale, (.1-transDown)*scale],
-            velocity: vels[1]
-        },
-        {
-            position: [-.1, -.05],
-            velocity: vels[1]
-        },
-        {
-            position: [-.2, -.1],
-            velocity: vels[1]
-        },
-        {
-            position: [-.2, -.4],
-            velocity: vels[1]
-        },
-    ];
-    const nodes = nodeStruct().createFilledArray(jsNodes);
+    const jsStructData = randTriangles(5, .2);
+    const nodes = nodeStruct().createFilledArray(jsStructData.nodes);
+    const edges = edgeStruct().createFilledArray(jsStructData.edges);
+    const triangles = triangleStruct().createFilledArray(jsStructData.triangles);
 
-    const k = .2;
-    const edges = edgeStruct().createFilledArray([
-        {
-            nodes: [0, 1],
-            idealLength: dist(jsNodes[0].position, jsNodes[1].position),
-            k
-        },
-        {
-            nodes: [0, 3],
-            idealLength: dist(jsNodes[0].position, jsNodes[3].position),
-            k
-        },
-        {
-            nodes: [1, 3],
-            idealLength: dist(jsNodes[1].position, jsNodes[3].position),
-            k
-        },
-        {
-            nodes: [1, 2],
-            idealLength: dist(jsNodes[1].position, jsNodes[2].position),
-            k
-        },
-        {
-            nodes: [2, 3],
-            idealLength: dist(jsNodes[2].position, jsNodes[3].position),
-            k
-        },
-        {
-            nodes: [4, 3],
-            idealLength: dist(jsNodes[4].position, jsNodes[3].position),
-            k
-        },
-        {
-            nodes: [4, 0],
-            idealLength: dist(jsNodes[4].position, jsNodes[0].position),
-            k
-        },
-        {
-            nodes: [5, 6],
-            idealLength: dist(jsNodes[5].position, jsNodes[6].position),
-            k
-        },
-        {
-            nodes: [5, 7],
-            idealLength: dist(jsNodes[5].position, jsNodes[7].position),
-            k
-        },
-        {
-            nodes: [6, 7],
-            idealLength: dist(jsNodes[6].position, jsNodes[7].position),
-            k
-        },
-    ]);
-
-    const triangles = triangleStruct().createFilledArray(
-        [
-            {
-                color: [.7, .3, 0.6, 1],
-                vertices: [
-                    0, 1, 3
-                ]
-            },
-            {
-                color: [.7, .3, 0.6, 1],
-                vertices: [
-                    1, 2, 3
-                ]
-            },
-            {
-                color: [.7, .3, 0.6, 1],
-                vertices: [
-                    0, 3, 4
-                ]
-            },
-            {
-                color: [.4, .7, 0.1, 1],
-                vertices: [
-                    5, 6, 7
-                ]
-            },
-        ]
-    );
 
     const nodeBuffer = device.createBuffer({
         label: "nodeBuffer",
         size: nodes.data.byteLength,
         usage: GPUBufferUsage.STORAGE |
                GPUBufferUsage.COPY_DST |
+               GPUBufferUsage.COPY_SRC | // used for debugging
                GPUBufferUsage.VERTEX
     });
-
     const edgeBuffer = device.createBuffer({
         label: "edgeBuffer",
         size: edges.data.byteLength,
         usage: GPUBufferUsage.STORAGE |
+              GPUBufferUsage.COPY_SRC | // used for debugging
                GPUBufferUsage.COPY_DST 
     });
-
     const triangleBuffer = device.createBuffer({
         label: "triangleBuffer",
         size: triangles.data.byteLength,
@@ -244,7 +132,6 @@ const main = async () => {
             {binding: 3, resource: triangleBuffer}
         ]
     });
-
     const renderBindGroup = device.createBindGroup({
         label: "renderBindGroup",
         layout: renderPipeline.getBindGroupLayout(0),
@@ -254,7 +141,20 @@ const main = async () => {
         ]
     });
 
-    console.log(new Float32Array(edges.data));
+    let debugNodeBuffer;
+    let debugEdgeBuffer;
+    if(DEBUG) {
+        debugNodeBuffer = device.createBuffer({
+            label: "debugNodeBuffer",
+            size: nodes.data.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+        });
+        debugEdgeBuffer = device.createBuffer({
+            label: "debugEdgeBuffer",
+            size: edges.data.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+        });
+    }
 
     device.queue.writeBuffer(nodeBuffer, 0, nodes.data);
     device.queue.writeBuffer(edgeBuffer, 0, edges.data);
@@ -262,7 +162,7 @@ const main = async () => {
     device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
     const render = () => {
-        renderPassDescriptor.colorAttachments[0].view = ctx.getCurrentTexture().createView();
+        
 
         const encoder = device.createCommandEncoder({label: "encoder"});
         
@@ -272,21 +172,40 @@ const main = async () => {
         computePass.dispatchWorkgroups(nodes.count);
         computePass.end();
         
+        renderPassDescriptor.colorAttachments[0].view = ctx.getCurrentTexture().createView();
         const renderPass = encoder.beginRenderPass(renderPassDescriptor);
         renderPass.setPipeline(renderPipeline);
         renderPass.setBindGroup(0, renderBindGroup);
         renderPass.draw(3, triangles.count);
         renderPass.end();
 
+        if(DEBUG) {
+            encoder.copyBufferToBuffer(nodeBuffer, 0, debugNodeBuffer, 0, nodeBuffer.size);
+            encoder.copyBufferToBuffer(edgeBuffer, 0, debugEdgeBuffer, 0, edgeBuffer.size);
+        }
+
         const commandBuffer = encoder.finish();
         device.queue.submit([commandBuffer]);
     };
 
-    const animationFrame = (timestamp) => {
+    let fc = 0;
+    const animationFrame = async (timestamp) => {
         const factor = 40000;
         uniformData[0] = accel.x/factor;
         uniformData[1] = accel.y/factor;
         device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+        if(DEBUG && fc%DEBUG_INTERVAL == 0) {
+            await debugNodeBuffer.mapAsync(GPUMapMode.READ);
+            const result = Array.from(new Float32Array(debugNodeBuffer.getMappedRange()));
+            //console.log(result);
+            debugNodeBuffer.unmap();
+            await debugEdgeBuffer.mapAsync(GPUMapMode.READ);
+            console.log(Array.from(new Uint32Array(debugEdgeBuffer.getMappedRange())));
+            debugEdgeBuffer.unmap();
+            if(fc >= DEBUG_CUTOFF) {return;}
+        }
+
         render();
         requestAnimationFrame(animationFrame);
     };
@@ -316,6 +235,4 @@ if(!window.matchMedia('(hover: hover)').matches && window.matchMedia('(pointer: 
 } else {
     main();
 }
-
-
 

@@ -109,7 +109,6 @@ export const edgeStruct = () => {
         const data = createEmptyArray(edgeData.length);
         const {nodesView, idealLengthView, kView} = data.views;
         edgeData.forEach(({nodes, idealLength, k}, i) => {
-            console.log(nodes, idealLength, k);
             nodesView.set(nodes, i*u32Count);
             idealLengthView.set([idealLength], i*floatCount);
             kView.set([k], i*floatCount);
