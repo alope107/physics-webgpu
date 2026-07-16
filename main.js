@@ -7,6 +7,10 @@ import { dist } from "./vectors.js";
 
 let accel = {x: 0, y:-9.8, z:0};
 
+const DEBUG = true;
+const DEBUG_INTERVAL = 10;
+const DEBUG_CUTOFF = 1000;
+
 const main = async () => {
     const device = await (await navigator.gpu?.requestAdapter( {
         powerPreference: "high-performance",
@@ -123,7 +127,7 @@ const main = async () => {
         {
             nodes: [0, 1],
             idealLength: dist(jsNodes[0].position, jsNodes[1].position),
-            k
+            k:.05//TODO: CHANGE ME BACK
         },
         {
             nodes: [0, 3],
@@ -133,7 +137,7 @@ const main = async () => {
         {
             nodes: [1, 3],
             idealLength: dist(jsNodes[1].position, jsNodes[3].position),
-            k
+            k:.05//TODO: CHANGE ME BACK
         },
         {
             nodes: [1, 2],
@@ -143,7 +147,7 @@ const main = async () => {
         {
             nodes: [2, 3],
             idealLength: dist(jsNodes[2].position, jsNodes[3].position),
-            k
+            k:.05//TODO: CHANGE ME BACK
         },
         {
             nodes: [4, 3],
@@ -153,7 +157,7 @@ const main = async () => {
         {
             nodes: [4, 0],
             idealLength: dist(jsNodes[4].position, jsNodes[0].position),
-            k
+           k:.05//TODO: CHANGE ME BACK
         },
         {
             nodes: [5, 6],
@@ -163,7 +167,7 @@ const main = async () => {
         {
             nodes: [5, 7],
             idealLength: dist(jsNodes[5].position, jsNodes[7].position),
-            k
+         k:.05//TODO: CHANGE ME BACK
         },
         {
             nodes: [6, 7],
@@ -206,8 +210,19 @@ const main = async () => {
         size: nodes.data.byteLength,
         usage: GPUBufferUsage.STORAGE |
                GPUBufferUsage.COPY_DST |
+               GPUBufferUsage.COPY_SRC |
                GPUBufferUsage.VERTEX
     });
+
+    let debugBuffer;
+    if(DEBUG) {
+        debugBuffer = device.createBuffer({
+            label: "debugBuffer",
+            size: nodes.data.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+        });
+    }
+    console.log(debugBuffer);
 
     const edgeBuffer = device.createBuffer({
         label: "edgeBuffer",
@@ -254,8 +269,6 @@ const main = async () => {
         ]
     });
 
-    console.log(new Float32Array(edges.data));
-
     device.queue.writeBuffer(nodeBuffer, 0, nodes.data);
     device.queue.writeBuffer(edgeBuffer, 0, edges.data);
     device.queue.writeBuffer(triangleBuffer, 0, triangles.data);
@@ -278,17 +291,28 @@ const main = async () => {
         renderPass.draw(3, triangles.count);
         renderPass.end();
 
+        if(DEBUG) {encoder.copyBufferToBuffer(nodeBuffer, 0, debugBuffer, 0, nodeBuffer.size);}
+
         const commandBuffer = encoder.finish();
         device.queue.submit([commandBuffer]);
     };
 
-    const animationFrame = (timestamp) => {
+    let fc = 0;
+    const animationFrame = async (timestamp) => {
         const factor = 40000;
         uniformData[0] = accel.x/factor;
         uniformData[1] = accel.y/factor;
         device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+        if(DEBUG && fc%DEBUG_INTERVAL == 0) {
+            await debugBuffer.mapAsync(GPUMapMode.READ);
+            const result = Array.from(new Float32Array(debugBuffer.getMappedRange()));
+            console.log(result);
+            debugBuffer.unmap();
+            if(fc >= DEBUG_CUTOFF) {return;}
+        }
         render();
         requestAnimationFrame(animationFrame);
+        fc++;
     };
     requestAnimationFrame(animationFrame);
 };

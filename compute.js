@@ -25,7 +25,7 @@ ${intersection}
         let id = global_invocation_index(workgroup_id, local_invocation_index, num_workgroups,
                                          1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
 
-        let restitution = .2;
+        var restitution = .2;
         let damping = .999;
 
         nodes[id].overlapping = 0;
@@ -48,15 +48,19 @@ ${intersection}
                 // EVEN MORE WILDLY INEFFICIENT
                 // ALSO WRONG
                 for(var j = 0u; j < arrayLength(&edges); j++) {
-                    if(j == i) {continue;}
+                    // if(j == i) {continue;}
                     let otherEdge = edges[j];
-                    if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
-                       otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
-                        if(intersection(nodes[id].position, nodes[otherId].position,
-                                        nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
-                                            nodes[id].overlapping = 1;
-                                        }
-                    }
+                    restitution += 0.000000001 * nodes[otherEdge.nodes[0]].velocity.x;//nodes[99].position.x;
+                    // if(otherEdge.nodes[0] != id && otherEdge.nodes[1] != id &&
+                    //    otherEdge.nodes[0] != otherId && otherEdge.nodes[1] != otherId) {
+                    // if(otherEdge.k > 0.0) {
+                    //     // if(intersection(nodes[id].position, nodes[otherId].position,
+                    //     //                 nodes[otherEdge.nodes[0]].position, nodes[otherEdge.nodes[1]].position).z != 0) {
+                    //     //                     // nodes[id].overlapping = 1;
+                    //     //                                         restitution += 0.000000001;
+                    //     //                 }
+                    //     restitution += 0.000000001 * nodes[otherEdge.nodes[0]].position.x;
+                    // }
                 }
 
             
@@ -67,7 +71,7 @@ ${intersection}
 
         nodes[id].velocity += uniforms.gravity;
         nodes[id].velocity *= damping;
-        nodes[id].position += nodes[id].velocity;
+        // nodes[id].position += nodes[id].velocity;
 
         // TODO: other walls?
         // TODO: branchless?
