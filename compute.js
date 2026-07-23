@@ -25,14 +25,14 @@ ${intersection}
 
 
 // TODO: better workgroup size UPDATE THE GLOBAL INDEX CALC IF CHANGED
-@compute @workgroup_size(1) fn applyPhysics(
+@compute @workgroup_size(8, 8, 1) fn applyPhysics(
     @builtin(workgroup_id) workgroup_id : vec3<u32>,
     @builtin(local_invocation_index) local_invocation_index: u32,
     @builtin(num_workgroups) num_workgroups: vec3<u32>) {
         let id = global_invocation_index(workgroup_id, local_invocation_index, num_workgroups,
-                                         1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
+                                         8*8*1 /* CHANGE ME WHEN WORKGROUP SIZE CHANGES */);
 
-        if(id > arrayLength(&nodes)) {return;}
+        if(id >= arrayLength(&nodes)) {return;}
 
         // DEBUG
         // Counting how mnay invocations per id - worried things might be double/undercounted?

@@ -171,7 +171,7 @@ const main = async () => {
         const computePass = encoder.beginComputePass();
         computePass.setPipeline(physicsPipeline);
         computePass.setBindGroup(0, physicsBindGroup);
-        computePass.dispatchWorkgroups(nodes.count);
+        computePass.dispatchWorkgroups(Math.ceil(Math.max(64, nodes.count/64)), Math.ceil(Math.max(64, nodes.count/64)));
         computePass.end();
         
         renderPassDescriptor.colorAttachments[0].view = ctx.getCurrentTexture().createView();
